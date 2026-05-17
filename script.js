@@ -3,21 +3,24 @@ const ctx = canvas.getContext("2d");
 
 const video = document.getElementById("video");
 
+canvas.width = 512;
+canvas.height = 512;
+
 function drawBrat(text){
 
     ctx.clearRect(0,0,512,512);
 
-    // background
-    ctx.fillStyle = "black";
+    // background putih
+    ctx.fillStyle = "white";
     ctx.fillRect(0,0,512,512);
 
-    // text
-    ctx.fillStyle = "white";
-    ctx.font = "bold 45px Arial";
+    // text hitam
+    ctx.fillStyle = "black";
+    ctx.font = "bold 48px Arial";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    wrapText(text,256,256,380,55);
+    wrapText(text,256,256,400,60);
 }
 
 function wrapText(text,x,y,maxWidth,lineHeight){
@@ -29,6 +32,7 @@ function wrapText(text,x,y,maxWidth,lineHeight){
     for(let n=0;n<words.length;n++){
 
         let testLine = line + words[n] + " ";
+
         let width = ctx.measureText(testLine).width;
 
         if(width > maxWidth && n > 0){
@@ -56,40 +60,42 @@ function wrapText(text,x,y,maxWidth,lineHeight){
 
 function generateBrat(){
 
-    let input = document.getElementById("text").value;
-
-    input = input
+    let input = document
+        .getElementById("text")
+        .value
         .replace(".brat","")
         .trim();
 
-    if(input === "") return;
+    if(!input) return;
 
     drawBrat(input);
 }
 
 function generateVideo(){
 
-    let input = document.getElementById("text").value;
-
-    input = input
+    let input = document
+        .getElementById("text")
+        .value
         .replace(".bratvid","")
         .trim();
 
-    if(input === "") return;
+    if(!input) return;
+
+    const words = input.split(" ");
 
     let chunks = [];
 
-    const stream = canvas.captureStream(30);
+    const stream = canvas.captureStream(60);
 
     const recorder = new MediaRecorder(stream,{
         mimeType:"video/webm"
     });
 
-    recorder.ondataavailable = e => {
+    recorder.ondataavailable = e=>{
         chunks.push(e.data);
     };
 
-    recorder.onstop = () => {
+    recorder.onstop = ()=>{
 
         const blob = new Blob(chunks,{
             type:"video/webm"
@@ -102,63 +108,70 @@ function generateVideo(){
 
     recorder.start();
 
-    let angle = 0;
+    let start = performance.now();
 
-    const animate = setInterval(()=>{
+    function animate(now){
 
-        ctx.save();
+        let elapsed = now - start;
 
         ctx.clearRect(0,0,512,512);
 
-        ctx.translate(256,256);
-
-        ctx.rotate(angle);
+        // background putih
+        ctx.fillStyle = "white";
+        ctx.fillRect(0,0,512,512);
 
         ctx.fillStyle = "black";
-        ctx.fillRect(-256,-256,512,512);
-
-        ctx.fillStyle = "white";
-        ctx.font = "bold 45px Arial";
+        ctx.font = "bold 48px Arial";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
-        wrapText(input,0,0,380,55);
+        const spacing = 60;
 
-        ctx.restore();
+        for(let i=0;i<words.length;i++){
 
-        angle += 0.03;
+            const delay = i * 800;
 
-    },33);
+            if(elapsed > delay){
 
-    setTimeout(()=>{
+                // smooth animation
+                let progress = Math.min(
+                    (elapsed - delay) / 500,
+                    1
+                );
 
-        clearInterval(animate);
+                // easing
+                progress = 1 - Math.pow(1 - progress,3);
 
-        recorder.stop();
+                let y =
+                    256 +
+                    (i * spacing) -
+                    ((words.length - 1) * spacing / 2);
 
-    },3000);
-}
+                // muncul dari bawah
+                let offsetY = (1 - progress) * 50;
 
-function downloadImage(){
+                ctx.globalAlpha = progress;
 
-    const link = document.createElement("a");
+                ctx.fillText(
+                    words[i],
+                    256,
+                    y + offsetY
+                );
 
-    link.download = "brat.png";
+                ctx.globalAlpha = 1;
+            }
+        }
 
-    link.href = canvas.toDataURL();
+        if(elapsed < (words.length * 800) + 1500){
 
-    link.click();
-}
+            requestAnimationFrame(animate);
 
-function downloadVideo(){
+        }else{
 
-    if(video.src === "") return;
+            recorder.stop();
 
-    const link = document.createElement("a");
+        }
+    }
 
-    link.download = "bratvid.webm";
-
-    link.href = video.src;
-
-    link.click();
+    requestAnimationFrame(animate);
 }
