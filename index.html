@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brat Generator</title>
+
+<style>
+body{
+    margin:0;
+    background:#111;
+    color:white;
+    font-family:Arial;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+}
+
+.box{
+    width:350px;
+    background:#1b1b1b;
+    padding:20px;
+    border-radius:20px;
+    text-align:center;
+}
+
+input{
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:10px;
+    margin-top:10px;
+    background:#2a2a2a;
+    color:white;
+    font-size:16px;
+}
+
+button{
+    margin-top:10px;
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:10px;
+    background:white;
+    color:black;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+canvas{
+    margin-top:20px;
+    width:100%;
+    border-radius:15px;
+    background:black;
+}
+
+video{
+    margin-top:20px;
+    width:100%;
+    border-radius:15px;
+}
+</style>
+</head>
+<body>
+
+<div class="box">
+
+<h2>BRAT GENERATOR 😈</h2>
+
+<input id="text" placeholder=".brat halo sigma">
+
+<button onclick="generateBrat()">Generate Brat</button>
+<button onclick="generateVideo()">Generate BratVid</button>
+
+<canvas id="canvas" width="512" height="512"></canvas>
+
+<video id="video" controls loop></video>
+
+</div>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+function drawBrat(text){
+
+    ctx.fillStyle = "black";
+    ctx.fillRect(0,0,512,512);
+
+    ctx.fillStyle = "white";
+    ctx.font = "bold 45px Arial";
+    ctx.textAlign = "center";
+
+    wrapText(text,256,230,400,60);
+}
+
+function wrapText(text,x,y,maxWidth,lineHeight){
+
+    const words = text.split(" ");
+    let line = "";
+
+    for(let n=0;n<words.length;n++){
+
+        let testLine = line + words[n] + " ";
+        let metrics = ctx.measureText(testLine);
+        let testWidth = metrics.width;
+
+        if(testWidth > maxWidth && n > 0){
+
+            ctx.fillText(line,x,y);
+            line = words[n] + " ";
+            y += lineHeight;
+
+        }else{
+            line = testLine;
+        }
+    }
+
+    ctx.fillText(line,x,y);
+}
+
+function generateBrat(){
+
+    let input = document.getElementById("text").value;
+
+    input = input.replace(".brat","");
+
+    drawBrat(input);
+}
+
+function generateVideo(){
+
+    let input = document.getElementById("text").value;
+
+    input = input.replace(".bratvid","");
+
+    let frames = [];
+    let angle = 0;
+
+    const stream = canvas.captureStream(30);
+
+    const recorder = new MediaRecorder(stream);
+
+    recorder.ondataavailable = e => {
+        frames.push(e.data);
+    };
+
+    recorder.onstop = e => {
+
+        const blob = new Blob(frames,{
+            type:"video/webm"
+        });
+
+        const url = URL.createObjectURL(blob);
+
+        const video = document.getElementById("video");
+        video.src = url;
+    };
+
+    recorder.start();
+
+    let interval = setInterval(()=>{
+
+        ctx.save();
+
+        ctx.clearRect(0,0,512,512);
+
+        ctx.translate(256,256);
+        ctx.rotate(angle);
+
+        ctx.fillStyle = "black";
+        ctx.fillRect(-256,-256,512,512);
+
+        ctx.fillStyle = "white";
+        ctx.font = "bold 45px Arial";
+        ctx.textAlign = "center";
+
+        ctx.fillText(input,0,0);
+
+        ctx.restore();
+
+        angle += 0.03;
+
+    },33);
+
+    setTimeout(()=>{
+
+        clearInterval(interval);
+        recorder.stop();
+
+    },3000);
+}
+</script>
+
+</body>
+</html>
